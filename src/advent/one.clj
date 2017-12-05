@@ -10,10 +10,13 @@
 (defn nth' [coll index]
   (nth coll (mod index (count coll))))
 
-(defn pairs [coll]
-  (map #(vector (nth' coll (dec %))
-                (nth' coll %))
-       (range (count coll))))
+(defn pairs
+  ([coll]
+   (pairs coll dec))
+  ([coll jump-fn]
+   (map #(vector (nth' coll (jump-fn %))
+                 (nth' coll %))
+        (range (count coll)))))
 
 (defn pairwise-sum [coll]
   (->> coll
@@ -22,5 +25,15 @@
        (map first)
        (reduce +)))
 
+(defn part-two-sum [coll]
+  (let [halfway (/ (count coll) 2)]
+    (->> (pairs coll #(+ % halfway))
+         (filter #(apply = %))
+         (map first)
+         (reduce +))))
+
 (defn run []
   (pairwise-sum (read-input)))
+
+(defn run-again []
+  (part-two-sum (read-input)))

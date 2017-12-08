@@ -22,6 +22,9 @@
                            :seek-min-y (fn [a b] (not= (get-in b [:min-y :y])
                                                        (get-in a [:min-y :y])))})
 
+(defn coordinates [point]
+  (vector (get point :x) (get point :y)))
+
 (defn known-points [state]
   (conj (get state :points)
         (get state :position)))
@@ -43,10 +46,11 @@
     :position position
     :strategy strategy}))
 
-(defn point [x y label]
+(defn point [x y label value]
   {:x x
    :y y
-   :label label})
+   :label label
+   :value value})
 
 (defn point-add [point x y]
   (merge
@@ -58,8 +62,8 @@
   (assoc point :label label))
 
 (defn initial-state []
-  (state [(point 0 0 1)]
-         (point 0 0 1)))
+  (state [(point 0 0 1 1)]
+         (point 0 0 1 1)))
 
 (defn with-position [state position]
   (-> state
@@ -89,6 +93,39 @@
             (assoc :points (vals (extremities next)))))
       (assoc next :points (vals (extremities next))))))
 
+(defn point-at [state point]
+  (let [points (get state :points)]
+    (first
+     (filter #(= (coordinates point) (coordinates %))
+             points))))
+
+(defn neighbors [state point]
+  (let [moves [[0 1] [0 -1]
+               [1 0] [1 1] [1 -1]
+               [-1 0] [-1 1] [-1 -1]]
+        this-x (get point :x)
+        this-y (get point :y)]
+    (remove nil? (map (fn [[x y]] (point-at state {:x (+ this-x x) :y (+ this-y y)}))
+                      moves))))
+
+(defn next-value [state point]
+  (reduce + (map :value (neighbors state point))))
+
+(defn next-state [state]
+  (let [next-state (one-away state)
+        next-position* (get next-state :position)
+        next-position-value (next-value state next-position*)
+        next-position (assoc next-position* :value next-position-value)
+        strategy (get state :strategy)
+        strategy-change-fn (get strategy->comparison strategy)
+        strategy-change? (strategy-change-fn (extremities next-state)
+                                             (extremities state))
+        preliminary-next-state (-> state
+                                   (update :points conj next-position)
+                                   (assoc :position next-position))]
+    (if strategy-change?
+      (assoc preliminary-next-state :strategy (get transitions strategy))
+      preliminary-next-state)))
 
 (defn current-label [state]
   (get-in state [:position :label]))
@@ -99,8 +136,12 @@
       state
       (recur (walk state)))))
 
-(defn coordinates [point]
-  (vector (get point :x) (get point :y)))
+(defn generate-board-past-value [v]
+  (loop [state (initial-state)]
+    (let [value (get-in state [:position :value])]
+      (if (> value v)
+        state
+        (recur (next-state state))))))
 
 (defn taxicab-distance [a b]
   (let [[x1 x2] (coordinates a)

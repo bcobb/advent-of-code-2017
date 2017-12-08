@@ -55,3 +55,9 @@
 (defn run []
   (get (rebalance (read-input))
        :n))
+
+(defn run-again []
+  (let [initial-rebalancing (rebalance (read-input))
+        initial-banks (get initial-rebalancing :banks)
+        second-rebalancing (rebalance initial-banks)]
+    (get second-rebalancing :n)))

@@ -13,6 +13,14 @@
 (defn simple-offset [offsets last-position]
   (update offsets last-position inc))
 
+(defn complex-adjustment [offset]
+  (if (> offset 2)
+    (dec offset)
+    (inc offset)))
+
+(defn complex-offset [offsets last-position]
+  (update offsets last-position complex-adjustment))
+
 (defn move-once
   ([state]
    (move-once state simple-offset))
@@ -24,17 +32,20 @@
      {:offsets (new-offsets-fn offsets position)
       :position new-position})))
 
-(defn steps-to-exit [offsets]
+(defn steps-to-exit [offsets new-offsets-fn]
   (loop [n 0
          state (initial-state offsets)]
     (if (escaped? state)
       n
       (recur (inc n)
-             (move-once state)))))
+             (move-once state new-offsets-fn)))))
 
 (defn read-input []
   (let [lines (str/split (slurp "resources/five.txt") #"\n")]
     (mapv #(Integer/parseInt %) lines)))
 
 (defn run []
-  (steps-to-exit (read-input)))
+  (steps-to-exit (read-input) simple-offset))
+
+(defn run-again []
+  (steps-to-exit (read-input) complex-offset))

@@ -30,11 +30,14 @@
 (defmethod advance [:garbage ">"] [state _]
   (assoc state :mode :group))
 
-(defmethod advance :default [state _]
-  state)
+(defmethod advance :default [{mode :mode :as state} token]
+  (if (= mode :garbage)
+    (update state :garbage-count + (count token))
+    state))
 
 (defn initial-state []
   {:score 0
+   :garbage-count 0
    :mode :group
    :stack []})
 

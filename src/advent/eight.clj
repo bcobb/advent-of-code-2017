@@ -48,9 +48,20 @@
   (let [operation (instruction->operation instruction)]
     (operation register)))
 
+(defn apply-instruction-with-memory-of-maxima [state instruction]
+  (let [register (apply-instruction (get state :register) instruction)
+        current-max (apply max (vals register))]
+    (-> state
+        (assoc :register register)
+        (update :maxima conj current-max))))
+
 (defn read-input []
   (str/split (slurp "resources/eight.txt") #"\n"))
 
 (defn run []
   (let [register (reduce apply-instruction {} (map parse-instruction (read-input)))]
     (apply max (vals register))))
+
+(defn run-again []
+  (let [state (reduce apply-instruction-with-memory-of-maxima {} (map parse-instruction (read-input)))]
+    (apply max (get state :maxima))))

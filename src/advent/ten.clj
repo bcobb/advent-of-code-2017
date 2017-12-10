@@ -49,9 +49,30 @@
 (defn process-lengths [state lengths]
   (reduce process-length state lengths))
 
+(defn dense-hash [{list :list}]
+  (map (partial apply bit-xor) (partition 16 list)))
+
+(defn to-hex [i]
+  (let [value (Integer/toHexString i)]
+    (if (= 1 (count value))
+      (str "0" value)
+      value)))
+
+(defn knot-hash [state]
+  (apply str (map to-hex (dense-hash state))))
+
 (defn run []
   (let [list (vec (range 256))
         lengths (mapv #(Integer/parseInt %)
                       (str/split (slurp "resources/ten.txt") #","))
         result (process-lengths (initial-state list) lengths)]
     (apply * (take-slice 2 result))))
+
+(defn run-again []
+  (let [list (vec (range 256))
+        addendum [17 31 73 47 23]
+        input-lengths (mapv int (slurp "resources/ten.txt"))
+        combined-lengths (into input-lengths addendum)
+        lengths (vec (apply concat (repeat 64 combined-lengths)))
+        result (process-lengths (initial-state list) lengths)]
+    (knot-hash result)))

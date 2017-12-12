@@ -29,9 +29,26 @@
           (recur (set/union connections secondary-connections)
                  unknown-connections))))))
 
+(defn total-groups [state]
+  (let [programs (keys state)]
+    (loop [possible-groups (set programs)
+           program (first programs)
+           found-groups []]
+      (if (empty? possible-groups)
+        found-groups
+        (let [group (connections-to program state)
+              remaining-groups (set/difference possible-groups group)]
+          (recur remaining-groups
+                 (first remaining-groups)
+                 (conj found-groups group)))))))
+
 (defn read-input []
   (map parse-line (str/split (slurp "resources/twelve.txt") #"\n")))
 
 (defn run []
   (let [state (reduce update-state {} (read-input))]
     (count (connections-to "0" state))))
+
+(defn run-again []
+  (let [state (reduce update-state {} (read-input))]
+    (count (total-groups state))))

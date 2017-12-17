@@ -58,7 +58,7 @@
       (str "0" value)
       value)))
 
-(defn knot-hash [state]
+(defn state->knot-hash [state]
   (apply str (map to-hex (dense-hash state))))
 
 (defn run []
@@ -75,4 +75,13 @@
         combined-lengths (into input-lengths addendum)
         lengths (vec (apply concat (repeat 64 combined-lengths)))
         result (process-lengths (initial-state list) lengths)]
-    (knot-hash result)))
+    (state->knot-hash result)))
+
+(defn knot-hash [string]
+  (let [list (vec (range 256))
+        addendum [17 31 73 47 23]
+        input-lengths (mapv int string)
+        combined-lengths (into input-lengths addendum)
+        lengths (vec (apply concat (repeat 64 combined-lengths)))
+        result (process-lengths (initial-state list) lengths)]
+    (state->knot-hash result)))

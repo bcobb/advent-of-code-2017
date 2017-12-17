@@ -1,0 +1,42 @@
+(ns advent.fifteen
+  (:require [clojure.string :as str]))
+
+(def div 2147483647)
+
+(defn generator [starting-value factor]
+  (fn []
+    (let [f #(rem (* factor %) div)
+          start (f (bigint starting-value))]
+      (iterate f start))))
+
+(def example-generator-a (generator 65 16807))
+(def example-generator-b (generator 8921 48271))
+
+(defn to-binary-string [i]
+  (Integer/toBinaryString i))
+
+(defn with-leading-zeroes [desired-length s]
+  (let [format-string (str "%" desired-length "s")
+        with-spaces (format format-string s)]
+    (str/replace with-spaces #" " "0")))
+
+(defn trailing [s n]
+  (let [start (- (count s) n)]
+    (subs s start)))
+
+(defn counts? [a b]
+  (let [max-length (max (count a) (count b))
+        comparable-a (with-leading-zeroes max-length a)
+        comparable-b (with-leading-zeroes max-length b)]
+    (= (trailing comparable-a 16)
+       (trailing comparable-b 16))))
+
+(defn judge [a-generator b-generator n]
+  (let [as (map to-binary-string (take n (a-generator)))
+        bs (map to-binary-string (take n (b-generator)))]
+    (count (filter (partial apply counts?) (partition 2 (interleave as bs))))))
+
+(defn run []
+  (let [generator-a (generator 277 16807)
+        generator-b (generator 349 48271)]
+    (judge generator-a generator-b 40000000)))

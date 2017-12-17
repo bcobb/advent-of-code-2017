@@ -55,3 +55,26 @@
     (apply + (map (partial severity firewall)
                   (depths firewall)
                   (depths firewall)))))
+
+(defn caught-at? [layer range delay]
+  (let [dividend (* 2 (dec range))
+        packet-position (+ layer delay)]
+    (zero? (mod packet-position dividend))))
+
+(defn position-equations [firewall]
+  (map (fn [me]
+         (let [layer (key me)
+               range (val me)]
+           (partial caught-at? layer range)))
+       firewall))
+
+(defn evades-capture? [equations delay]
+  (empty?
+   (filter identity
+           (map #(% delay) equations))))
+
+(defn run-again []
+  (let [firewall (get-firewall)
+        eqs (position-equations firewall)]
+    (first (filter (partial evades-capture? eqs)
+                   (range)))))

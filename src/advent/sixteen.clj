@@ -34,9 +34,9 @@
           (assoc dest a)))))
 
 (defn dance [programs moves]
-  (str/join (reduce (fn [programs' move] (move programs'))
-                    programs
-                    moves)))
+  (reduce (fn [programs' move] (move programs'))
+          programs
+          moves))
 
 (defmulti parse-move first)
 
@@ -71,3 +71,29 @@
 (defn run []
   (dance (vec (alphabet-range \a \p))
          (parse-moves (read-input))))
+
+
+(defn moves-until-cycle [initial-programs moves]
+  (loop [programs initial-programs
+         i 0]
+    (if (and (= programs initial-programs)
+             (not (zero? i)))
+      i
+      (recur (dance programs moves)
+             (inc i)))))
+
+(defn dance-n-times [n initial-programs moves]
+  (loop [programs initial-programs
+         i 0]
+    (if (= i n)
+      programs
+      (recur (dance programs moves)
+             (inc i)))))
+
+(defn run-again []
+  (let [programs (vec (alphabet-range \a \p))
+        moves (parse-moves (read-input))
+        cycle-length (moves-until-cycle programs moves)
+        one-billion 1000000000
+        effective-moves (mod one-billion cycle-length)]
+    (dance-n-times effective-moves programs moves)))

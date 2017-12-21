@@ -74,6 +74,7 @@
 
 (defn make-packet [entry]
   {:position entry
+   :steps 1
    :letters []
    :direction :south})
 
@@ -87,6 +88,7 @@
 
 (defn move-in [packet cardinal-direction]
   (-> packet
+      (update :steps inc)
       (update :position #(move % cardinal-direction))
       (assoc :direction cardinal-direction)))
 
@@ -105,11 +107,17 @@
 (defn unmoved? [{a :position} {b :position}]
   (= a b))
 
-(defn run []
+(defn navigate []
   (let [matrix (read-input)
         entry (entry-point matrix)]
     (loop [packet (make-packet entry)]
       (let [next-packet (move-packet matrix packet)]
         (if (unmoved? packet next-packet)
-          (str/join (get packet :letters))
+          packet
           (recur next-packet))))))
+
+(defn run []
+  (str/join (get (navigate) :letters)))
+
+(defn run-again []
+  (get (navigate) :steps))

@@ -38,6 +38,10 @@
 (defn closest-to-origin [particles]
   (first (sort-by distance-from-origin particles)))
 
+(defn without-collisions [particles]
+  (let [by-position (group-by :position particles)]
+    (vec (flatten (map last (filter #(= 1 (count (val %))) by-position))))))
+
 (defn run [needed-wins]
   (loop [particles (read-input)
          candidate (closest-to-origin particles)
@@ -54,7 +58,22 @@
                  new-candidate
                  0))))))
 
+(defn run-again [needed-consecutive-safe-rounds]
+  (loop [particles (read-input)
+         safe-rounds 0]
+    (if (= safe-rounds needed-consecutive-safe-rounds)
+      (count particles)
+      (let [new-particles (mapv tick (without-collisions particles))]
+        (if (= (count new-particles) (count particles))
+          (recur new-particles
+                 (inc safe-rounds))
+          (recur new-particles
+                 0))))))
+
 ;; find the particle which is closest 250 ticks in a row, which seems
 ;; like it ought to be enough???
 (defn which-stays-closest? []
   (run 250))
+
+(defn how-many-left-after-collisions? []
+  (run-again 250))

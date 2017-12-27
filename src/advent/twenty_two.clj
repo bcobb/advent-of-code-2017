@@ -1,20 +1,37 @@
 (ns advent.twenty-two
   (:require [clojure.string :as str]))
 
-(def infected-moves {:north :east
-                     :east :south
-                     :south :west
-                     :west :north})
-
-(def clean-moves {:north :west
-                  :west :south
-                  :south :east
-                  :east :north})
-
 (def direction->coordinate-change {:north [-1 0]
                                    :east [0 1]
                                    :south [1 0]
                                    :west [0 -1]})
+
+(def node-state-transitions {:clean :weakened
+                             :weakened :infected
+                             :infected :flagged
+                             :flagged :clean})
+
+(def node-state->direction {:clean :left
+                            :weakened :same
+                            :infected :right
+                            :flagged :reverse})
+
+(def cardinal->relative->cardinal {:north {:left :west
+                                           :same :north
+                                           :right :east
+                                           :reverse :south}
+                                   :east {:left :north
+                                          :same :east
+                                          :right :south
+                                          :reverse :west}
+                                   :south {:left :east
+                                           :same :south
+                                           :right :west
+                                           :reverse :north}
+                                   :west {:left :south
+                                          :same :west
+                                          :right :north
+                                          :reverse :east}})
 
 (defn infected-symbol? [c]
   (= \# c))
@@ -33,6 +50,8 @@
   (let [grid (mapv vec (str/split (slurp "resources/twenty_two.txt") #"\n"))]
     {:initial-size (count grid)
      :infections 0
+     :weakened #{}
+     :flagged #{}
      :infected (set (detect-infected grid))}))
 
 (defn starting-point [{side-length :initial-size}]
@@ -45,17 +64,18 @@
            :direction :north
            :position (starting-point grid))))
 
-(defn on-infected-node? [{:keys [position infected]}]
-  (contains? infected position))
-
-(defn direction-map [state]
-  (if (on-infected-node? state)
-    infected-moves
-    clean-moves))
+(defn node-state [{:keys [position infected weakened flagged]}]
+  (condp contains? position
+    infected :infected
+    weakened :weakened
+    flagged :flagged
+    :clean))
 
 (defn update-direction [{:keys [direction] :as state}]
-  (let [mapping (direction-map state)]
-    (update state :direction (partial get mapping))))
+  (let [node-state (node-state state)
+        relative-direction (get node-state->direction node-state)
+        new-direction (get-in cardinal->relative->cardinal [direction relative-direction])]
+    (assoc state :direction new-direction)))
 
 (defn update-position [{:keys [direction position] :as state}]
   (let [[dx dy] (get direction->coordinate-change direction)]
@@ -63,17 +83,24 @@
         (update-in [:position 0] + dx)
         (update-in [:position 1] + dy))))
 
-(defn update-infected [{:keys [infected position] :as state}]
-  (if (on-infected-node? state)
-    (update state :infected disj position)
+(defn count-infections [state new-node-state]
+  (if (= :infected new-node-state)
+    (update state :infections inc)
+    state))
+
+(defn update-node-state [{:keys [position] :as state}]
+  (let [current-node-state (node-state state)
+        new-node-state (get node-state-transitions current-node-state)]
     (-> state
-        (update :infected conj position)
-        (update :infections inc))))
+        (update current-node-state disj position)
+        (update new-node-state conj position)
+        (count-infections new-node-state)
+        (dissoc :clean))))
 
 (defn burst [state]
   (-> state
       update-direction
-      update-infected
+      update-node-state
       update-position))
 
 (defn simulate [n]
